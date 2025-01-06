@@ -181,6 +181,16 @@ class RobotBaseNode(Node):
                 self.publish_lidar_cyclonedds,
                 qos_profile)
 
+        self.camera_image = None  # Variable to store the camera image
+
+        # Create a subscriber for the camera image topic
+        self.create_subscription(
+            Image,
+            'camera/image_raw',
+            self.camera_image_cb,
+            qos_profile
+        )
+
         self.timer = self.create_timer(0.1, self.timer_callback)
         self.timer_lidar = self.create_timer(0.5, self.timer_callback_lidar)
 
@@ -535,6 +545,9 @@ class RobotBaseNode(Node):
             self.joy_cmd(robot_num)
             generate_custom_commands(self.robot_cmd_vel, robot_num)
             await asyncio.sleep(0.1)
+
+    def camera_image_cb(self, msg):
+        self.camera_image = msg  # Store the received image
 
 
 async def spin(node: Node):
