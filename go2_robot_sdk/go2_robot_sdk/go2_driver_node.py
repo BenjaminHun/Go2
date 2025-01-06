@@ -38,6 +38,7 @@ from scripts.go2_lidar_decoder import update_meshes_for_cloud2
 from scripts.go2_math import get_robot_joints
 from scripts.go2_camerainfo import load_camera_info
 from scripts.webrtc_driver import Go2Connection
+from scripts.go2_custom import generate_custom_commands
 
 import rclpy
 from rclpy.node import Node
@@ -532,6 +533,7 @@ class RobotBaseNode(Node):
 
         while True:
             self.joy_cmd(robot_num)
+            generate_custom_commands(self.robot_cmd_vel, robot_num)
             await asyncio.sleep(0.1)
 
 
