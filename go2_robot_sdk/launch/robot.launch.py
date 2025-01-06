@@ -22,6 +22,8 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import os
+import subprocess
+import sys
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.conditions import IfCondition
@@ -44,6 +46,13 @@ def generate_launch_description():
     robot_ip = os.getenv('ROBOT_IP', '')
     robot_ip_lst = robot_ip.replace(" ", "").split(",")
     print("IP list:", robot_ip_lst)
+
+    # Ping each IP address and abort if no response
+    for ip in robot_ip_lst:
+        response = subprocess.run(['ping', '-c', '1', ip], stdout=subprocess.PIPE)
+        if response.returncode != 0:
+            print(f"Error: No response from {ip}. Aborting.")
+            sys.exit(1)
 
     conn_mode = "single" if len(robot_ip_lst) == 1 else "multi"
 
