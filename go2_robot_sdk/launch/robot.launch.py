@@ -31,6 +31,11 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import FrontendLaunchDescriptionSource, PythonLaunchDescriptionSource
+import logging
+
+logging.basicConfig(level=logging.WARN)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 def generate_launch_description():
 
@@ -45,13 +50,13 @@ def generate_launch_description():
     robot_token = os.getenv('ROBOT_TOKEN', '') # how does this work for multiple robots?
     robot_ip = os.getenv('ROBOT_IP', '')
     robot_ip_lst = robot_ip.replace(" ", "").split(",")
-    print("IP list:", robot_ip_lst)
+    logger.info("IP list:", robot_ip_lst)
 
     # Ping each IP address and abort if no response
     for ip in robot_ip_lst:
         response = subprocess.run(['ping', '-c', '1', ip], stdout=subprocess.PIPE)
         if response.returncode != 0:
-            print(f"Error: No response from {ip}. Aborting.")
+            logger.info(f"Error: No response from {ip}. Aborting.")
             sys.exit(1)
 
     conn_mode = "single" if len(robot_ip_lst) == 1 else "multi"

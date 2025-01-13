@@ -25,6 +25,12 @@ import datetime
 import json
 import random
 import sys
+import logging
+
+logging.basicConfig(level=logging.WARN)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
 
 
 def generate_id():
@@ -53,7 +59,7 @@ def gen_command(cmd: int):
 
 def gen_mov_command(x: float, y: float, z: float):
     if abs(x) > 0.1 or abs(y) > 0.1 or abs(z) > 0.1:
-        print("Error: One of the parameters has an absolute value greater than 0.1")
+        logger.info("Error: One of the parameters has an absolute value greater than 0.1")
         sys.exit(1)
 
     command = {

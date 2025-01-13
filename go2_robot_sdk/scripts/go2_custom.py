@@ -1,6 +1,11 @@
 import cv2
 import numpy as np
 from go2_robot_sdk.scripts.go2_func import gen_mov_command
+import logging
+
+logging.basicConfig(level=logging.WARN)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 def generate_custom_commands(robot_cmd_vel, robot_num, camera_image):
@@ -8,16 +13,16 @@ def generate_custom_commands(robot_cmd_vel, robot_num, camera_image):
     custom_z = 0.0  # Custom angular velocity
     # Example: Use the camera image to generate custom commands
     if camera_image is None:
-        print("Camera image is None")
+        logger.info("Camera image is None")
         return
     
     distance = detect_circle_and_calculate_distance(camera_image, 10, 50, 'red')
     
     if distance is None:
-        print("Circle not found")
+        logger.info("Circle not found")
         return
     else:
-        print("Distance:", distance)
+        logger.info("Distance:", distance)
     
         # Process the distance and generate commands
     custom_z = distance  # Custom angular velocity
