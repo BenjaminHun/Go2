@@ -60,7 +60,11 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 
+
+
 class RobotBaseNode(Node):
+    def camera_image_cb(self, msg):
+        self.camera_image = msg  # Store the received image
 
     def __init__(self):
         super().__init__('go2_driver_node')
@@ -97,6 +101,16 @@ class RobotBaseNode(Node):
         self.imu_pub = []
         self.img_pub = []
         self.camera_info_pub = []
+        self.camera_image = None  # Variable to store the camera image
+        
+        # Create a subscriber for the camera image topic
+        self.create_subscription(
+            Image,
+            'camera/image_raw',
+            self.camera_image_cb,
+            qos_profile
+        )
+
 
         if self.conn_mode == 'single':
             self.joint_pub.append(self.create_publisher(
@@ -127,6 +141,8 @@ class RobotBaseNode(Node):
                     Image, f'robot{i}/camera/image_raw', qos_profile))
                 self.camera_info_pub.append(self.create_publisher(
                     CameraInfo, f'robot{i}/camera/camera_info', qos_profile))
+        
+
 
         self.broadcaster = TransformBroadcaster(self, qos=qos_profile)
 
@@ -533,9 +549,12 @@ class RobotBaseNode(Node):
 
         while True:
             self.joy_cmd(robot_num)
-            generate_custom_commands(self.robot_cmd_vel, robot_num)
+            self.get_logger().info(f"Running generate commands {self.conn_mode}")
+            generate_custom_commands(self.robot_cmd_vel, robot_num,self.camera_image,self)
+            #self.robot_cmd_vel[robot_num]=gen_mov_command(0.0, 0.0, 0.0)
             await asyncio.sleep(0.1)
 
+    
 
 async def spin(node: Node):
     cancel = node.create_guard_condition(lambda: None)
