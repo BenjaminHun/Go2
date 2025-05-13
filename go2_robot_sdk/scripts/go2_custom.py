@@ -113,7 +113,7 @@ def generate_custom_commands(robot_cmd_vel, robot_num, camera_image,self):
         self.get_logger().info("Camera image is None")
         return
     self.get_logger().info("Camera image is not None")
-    return
+
     
     rotation,throotle = detect_circle_and_calculate_distance(camera_image, 30, 70, 'blue')
     

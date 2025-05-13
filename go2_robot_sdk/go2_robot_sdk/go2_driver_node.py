@@ -111,38 +111,17 @@ class RobotBaseNode(Node):
             qos_profile
         )
 
-
-        if self.conn_mode == 'single':
-            self.joint_pub.append(self.create_publisher(
-                JointState, 'joint_states', qos_profile))
-            self.go2_state_pub.append(self.create_publisher(
-                Go2State, 'go2_states', qos_profile))
-            self.go2_lidar_pub.append(self.create_publisher(
-                PointCloud2, 'point_cloud2', qos_profile))
-            self.go2_odometry_pub.append(
-                self.create_publisher(Odometry, 'odom', qos_profile))
-            self.imu_pub.append(self.create_publisher(IMU, 'imu', qos_profile))
-            self.img_pub.append(self.create_publisher(Image, 'camera/image_raw', qos_profile))
-            self.camera_info_pub.append(self.create_publisher(CameraInfo, 'camera/camera_info', qos_profile))
-
-        else:
-            for i in range(len(self.robot_ip_lst)):
-                self.joint_pub.append(self.create_publisher(
-                    JointState, f'robot{i}/joint_states', qos_profile))
-                self.go2_state_pub.append(self.create_publisher(
-                    Go2State, f'robot{i}/go2_states', qos_profile))
-                self.go2_lidar_pub.append(self.create_publisher(
-                    PointCloud2, f'robot{i}/point_cloud2', qos_profile))
-                self.go2_odometry_pub.append(self.create_publisher(
-                    Odometry, f'robot{i}/odom', qos_profile))
-                self.imu_pub.append(self.create_publisher(
-                    IMU, f'robot{i}/imu', qos_profile))
-                self.img_pub.append(self.create_publisher(
-                    Image, f'robot{i}/camera/image_raw', qos_profile))
-                self.camera_info_pub.append(self.create_publisher(
-                    CameraInfo, f'robot{i}/camera/camera_info', qos_profile))
-        
-
+        self.joint_pub.append(self.create_publisher(
+            JointState, 'joint_states', qos_profile))
+        self.go2_state_pub.append(self.create_publisher(
+            Go2State, 'go2_states', qos_profile))
+        self.go2_lidar_pub.append(self.create_publisher(
+            PointCloud2, 'point_cloud2', qos_profile))
+        self.go2_odometry_pub.append(
+            self.create_publisher(Odometry, 'odom', qos_profile))
+        self.imu_pub.append(self.create_publisher(IMU, 'imu', qos_profile))
+        self.img_pub.append(self.create_publisher(Image, 'camera/image_raw', qos_profile))
+        self.camera_info_pub.append(self.create_publisher(CameraInfo, 'camera/camera_info', qos_profile))
 
         self.broadcaster = TransformBroadcaster(self, qos=qos_profile)
 
@@ -157,19 +136,12 @@ class RobotBaseNode(Node):
 
         self.joy_state = Joy()
 
-        if self.conn_mode == 'single':
-            self.create_subscription(
-                Twist,
-                'cmd_vel_out',
-                lambda msg: self.cmd_vel_cb(msg, "0"),
-                qos_profile)
-        else:
-            for i in range(len(self.robot_ip_lst)):
-                self.create_subscription(
-                    Twist,
-                    f'robot{str(i)}/cmd_vel_out',
-                    lambda msg: self.cmd_vel_cb(msg, str(i)),
-                    qos_profile)
+        self.create_subscription(
+            Twist,
+            'cmd_vel_out',
+            lambda msg: self.cmd_vel_cb(msg, "0"),
+            qos_profile)
+
 
         self.create_subscription(
             Joy,
@@ -177,39 +149,18 @@ class RobotBaseNode(Node):
             self.joy_cb,
             qos_profile)
 
-        # Support for CycloneDDS (EDU version via ethernet)
-        if self.conn_type == 'cyclonedds':
-            self.create_subscription(
-                LowState,
-                'lowstate',
-                self.publish_joint_state_cyclonedds,
-                qos_profile)
-
-            self.create_subscription(
-                PoseStamped,
-                '/utlidar/robot_pose',
-                self.publish_body_poss_cyclonedds,
-                qos_profile)
-
-            self.create_subscription(
-                PointCloud2,
-                '/utlidar/cloud',
-                self.publish_lidar_cyclonedds,
-                qos_profile)
 
         self.timer = self.create_timer(0.1, self.timer_callback)
         self.timer_lidar = self.create_timer(0.5, self.timer_callback_lidar)
 
     def timer_callback(self):
-        if self.conn_type == 'webrtc':
-            self.publish_odom_webrtc()
-            self.publish_odom_topic_webrtc()
-            self.publish_robot_state_webrtc()
-            self.publish_joint_state_webrtc()
+        self.publish_odom_webrtc()
+        self.publish_odom_topic_webrtc()
+        self.publish_robot_state_webrtc()
+        self.publish_joint_state_webrtc()
 
     def timer_callback_lidar(self):
-        if self.conn_type == 'webrtc':
-            self.publish_lidar_webrtc()
+        self.publish_lidar_webrtc()
 
     def cmd_vel_cb(self, msg, robot_num):
         x = msg.linear.x
@@ -262,25 +213,23 @@ class RobotBaseNode(Node):
         self.go2_lidar_pub[0].publish(msg)
 
     def joy_cmd(self, robot_num):
+        if robot_num in self.conn and robot_num in self.robot_cmd_vel and self.robot_cmd_vel[robot_num] != None:
+            self.get_logger().info("Move")
+            self.conn[robot_num].data_channel.send(
+                self.robot_cmd_vel[robot_num])
+            self.robot_cmd_vel[robot_num] = None
 
-        if self.conn_type == 'webrtc':
-            if robot_num in self.conn and robot_num in self.robot_cmd_vel and self.robot_cmd_vel[robot_num] != None:
-                self.get_logger().info("Move")
-                self.conn[robot_num].data_channel.send(
-                    self.robot_cmd_vel[robot_num])
-                self.robot_cmd_vel[robot_num] = None
+        if robot_num in self.conn and self.joy_state.buttons and self.joy_state.buttons[1]:
+            self.get_logger().info("Stand down")
+            stand_down_cmd = gen_command(ROBOT_CMD["StandDown"])
+            self.conn[robot_num].data_channel.send(stand_down_cmd)
 
-            if robot_num in self.conn and self.joy_state.buttons and self.joy_state.buttons[1]:
-                self.get_logger().info("Stand down")
-                stand_down_cmd = gen_command(ROBOT_CMD["StandDown"])
-                self.conn[robot_num].data_channel.send(stand_down_cmd)
-
-            if robot_num in self.conn and self.joy_state.buttons and self.joy_state.buttons[0]:
-                self.get_logger().info("Stand up")
-                stand_up_cmd = gen_command(ROBOT_CMD["StandUp"])
-                self.conn[robot_num].data_channel.send(stand_up_cmd)
-                move_cmd = gen_command(ROBOT_CMD['BalanceStand'])
-                self.conn[robot_num].data_channel.send(move_cmd)
+        if robot_num in self.conn and self.joy_state.buttons and self.joy_state.buttons[0]:
+            self.get_logger().info("Stand up")
+            stand_up_cmd = gen_command(ROBOT_CMD["StandUp"])
+            self.conn[robot_num].data_channel.send(stand_up_cmd)
+            move_cmd = gen_command(ROBOT_CMD['BalanceStand'])
+            self.conn[robot_num].data_channel.send(move_cmd)
 
     def on_validated(self, robot_num):
         if robot_num in self.conn:
@@ -339,10 +288,7 @@ class RobotBaseNode(Node):
                 odom_trans.header.stamp = self.get_clock().now().to_msg()
                 odom_trans.header.frame_id = 'odom'
 
-                if self.conn_mode == 'single':
-                    odom_trans.child_frame_id = "base_link"
-                else:
-                    odom_trans.child_frame_id = f"robot{str(i)}/base_link"
+                odom_trans.child_frame_id = "base_link"
 
                 odom_trans.transform.translation.x = self.robot_odom[str(
                     i)]['data']['pose']['position']['x']
@@ -367,11 +313,7 @@ class RobotBaseNode(Node):
                 odom_msg.header.stamp = self.get_clock().now().to_msg()
                 odom_msg.header.frame_id = 'odom'
 
-                if self.conn_mode == 'single':
-                    odom_msg.child_frame_id = "base_link"
-
-                else:
-                    odom_msg.child_frame_id = f"robot{str(i)}/base_link"
+                odom_msg.child_frame_id = "base_link"
 
                 odom_msg.pose.pose.position.x = self.robot_odom[str(
                     i)]['data']['pose']['position']['x']
@@ -543,9 +485,9 @@ class RobotBaseNode(Node):
     async def run(self, conn, robot_num):
         self.conn[robot_num] = conn
 
-        if self.conn_type == 'webrtc':
-            await self.conn[robot_num].connect()
-            # await self.conn[robot_num].data_channel.disableTrafficSaving(True)
+
+        await self.conn[robot_num].connect()
+        # await self.conn[robot_num].data_channel.disableTrafficSaving(True)
 
         while True:
             self.joy_cmd(robot_num)
