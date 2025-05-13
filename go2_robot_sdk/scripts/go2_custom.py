@@ -9,32 +9,6 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 bridge = CvBridge()
 
-
-def generate_custom_commands(robot_cmd_vel, robot_num, camera_image,self):
-    
-    custom_x = 0.0  # Custom linear velocity
-    custom_z = 0.0  # Custom angular velocity
-    # Example: Use the camera image to generate custom commands
-    #self.get_logger().info(str(camera_image))
-    if camera_image is None:
-        self.get_logger().info("Camera image is None")
-        return
-    self.get_logger().info("Camera image is not None")
-    
-    rotation,throotle = detect_circle_and_calculate_distance(camera_image, 30, 70, 'blue')
-    
-    if rotation is None:
-        self.get_logger().info("Circle not found")
-        return
-    else:
-        self.get_logger().info("Distance:" + str(rotation))
-    
-        # Process the distance and generate commands
-    rotation = rotation*-1  # Custom angular velocity
-    if abs(rotation)>0.01 and abs(throotle)>0.01:
-        robot_cmd_vel[robot_num] = gen_mov_command(throotle, 0.0, rotation)
-    #robot_cmd_vel[robot_num] = gen_mov_command(0.0, 0.0, 0.2)
-
 def detect_circle_and_calculate_distance(camera_image, min_radius, max_radius, color):
     try:
         cv_image = bridge.imgmsg_to_cv2(camera_image, desired_encoding='bgr8')
@@ -117,8 +91,8 @@ def detect_circle_and_calculate_distance(camera_image, min_radius, max_radius, c
             # Save the image with the detected circle
             cv_image_path = 'detected_circle_image.jpg'
             masked_image_path = 'masked_image.jpg'
-            cv2.imwrite(cv_image_path, cv_image)
-            cv2.imwrite(masked_image_path, masked_image)
+            #cv2.imwrite(cv_image_path, cv_image)
+            #cv2.imwrite(masked_image_path, masked_image)
             throotle = 0.0
             if radius<50:
                 throotle = 0.2
@@ -128,3 +102,31 @@ def detect_circle_and_calculate_distance(camera_image, min_radius, max_radius, c
 
     # If no circle is found, return None or a default value
     return 0.0,0.0
+
+def generate_custom_commands(robot_cmd_vel, robot_num, camera_image,self):
+    
+    custom_x = 0.0  # Custom linear velocity
+    custom_z = 0.0  # Custom angular velocity
+    # Example: Use the camera image to generate custom commands
+    #self.get_logger().info(str(camera_image))
+    if camera_image is None:
+        self.get_logger().info("Camera image is None")
+        return
+    self.get_logger().info("Camera image is not None")
+    return
+    
+    rotation,throotle = detect_circle_and_calculate_distance(camera_image, 30, 70, 'blue')
+    
+    if rotation is None:
+        self.get_logger().info("Circle not found")
+        return
+    else:
+        self.get_logger().info("Distance:" + str(rotation))
+    
+        # Process the distance and generate commands
+    rotation = rotation*-1  # Custom angular velocity
+    if abs(rotation)>0.01 and abs(throotle)>0.01:
+        robot_cmd_vel[robot_num] = gen_mov_command(throotle, 0.0, rotation)
+    self.get_logger().info("Trace1" )
+    #robot_cmd_vel[robot_num] = gen_mov_command(0.0, 0.0, 0.2)
+
