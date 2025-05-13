@@ -227,10 +227,10 @@ def generate_launch_description():
             ],
         ),
 
-        IncludeLaunchDescription(
-            FrontendLaunchDescriptionSource(foxglove_launch),
-            condition=IfCondition(with_foxglove),
-        ),
+        #IncludeLaunchDescription(
+        #    FrontendLaunchDescriptionSource(foxglove_launch),
+        #    condition=IfCondition(with_foxglove),
+        #),
 
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource([
